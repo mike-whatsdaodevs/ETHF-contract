@@ -9,13 +9,26 @@ import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 
 contract ETHFAirdrop is
     OwnableUpgradeable,
     PausableUpgradeable,
     UUPSUpgradeable,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardUpgradeable,
+    EIP712Upgradeable
 {
+    struct Message {
+        address sender;
+        address token;
+        uint256 amount;
+        uint256 expiration;
+    }
+
+    // Type hash (EIP-712 Typed Data)
+    bytes32 public constant MESSAGE_TYPEHASH = keccak256(
+        "Message(address sender,address token,uint256 amount,uint256 expiration)"
+    );
 
     address public signer;
     mapping(address => uint256) public claimed;
@@ -32,6 +45,7 @@ contract ETHFAirdrop is
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
+        __EIP712_init("ETHFAIRDROP", "1");
 
         signer = signerAddress;
     }
@@ -55,6 +69,8 @@ contract ETHFAirdrop is
         require(recoveryAddress == signer,"invalid signature");
 
         IERC20(ETHF).transfer(msg.sender, amount);
+
+        claimed[msg.sender] = amount;
     }
 
     function verifyCheck(
@@ -93,6 +109,38 @@ contract ETHFAirdrop is
     function takeBackToken() external onlyOwner {
         uint256 tokenBalance = IERC20(ETHF).balanceOf(address(this));
         IERC20(ETHF).transfer(msg.sender, tokenBalance);
+    }
+
+    // Hash the message (EIP-712 compliant)
+    function hashMessage(Message memory message) public view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        MESSAGE_TYPEHASH,
+                        message.sender,
+                        message.token,
+                        message.amount,
+                        message.expiration
+                    )
+                )
+            );
+    }
+
+    // Verify the signature
+    function verifyUser(
+        Message memory message,
+        bytes memory signature
+    ) public view returns (bool) {
+        require(message.expiration < block.timestamp, "E: expiration");
+        // Hash the message
+        bytes32 digest = hashMessage(message);
+
+        // Recover the signer
+        address recoveredSigner = ECDSA.recover(digest,signature);
+
+        // Check if the signer is the `from` address
+        return recoveredSigner == message.sender;
     }
 
     function pause() external onlyOwner {
