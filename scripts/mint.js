@@ -19,7 +19,8 @@ async function main() {
   console.log(network);
 
 
-  let ethf_address = process.env.ETHF;
+  let ethf_address = process.env.SEPOLIA_ETHF;
+  let airdrop_address = process.env.SEPOLIA_ETHF;
   console.log("ethf_address :", ethf_address);
   const ethf = await ethers.getContractAt('ETHF', ethf_address, signer);
 

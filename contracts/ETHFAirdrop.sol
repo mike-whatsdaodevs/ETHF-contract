@@ -9,30 +9,29 @@ import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 
 contract ETHFAirdrop is
     OwnableUpgradeable,
     PausableUpgradeable,
     UUPSUpgradeable,
-    ReentrancyGuardUpgradeable,
-    EIP712Upgradeable
-{
-    struct Message {
-        address sender;
-        address token;
-        uint256 amount;
-        uint256 expiration;
+    ReentrancyGuardUpgradeable
+{   
+    uint256 public totalAmount;
+    uint256 public totalVestedToken;
+    mapping(address => uint256) public claimed;
+    mapping(address => uint256) public WhiteListAmounts;
+
+    struct ClaimInfo {
+        uint256 nextClaimTime;
+        uint256 claimTimes;
     }
 
-    // Type hash (EIP-712 Typed Data)
-    bytes32 public constant MESSAGE_TYPEHASH = keccak256(
-        "Message(address sender,address token,uint256 amount,uint256 expiration)"
-    );
+    mapping(address => ClaimInfo) public claimInfo;
 
-    address public signer;
-    mapping(address => uint256) public claimed;
     address public immutable ETHF;
+
+
+    event Claimed(address send, uint256 amount);
 
     /* ========== CONSTRUCTOR ========== */
     constructor(address ethfToken) {
@@ -40,70 +39,30 @@ contract ETHFAirdrop is
         ETHF = ethfToken;
     }
 
-    function initialize(address initialOwner, address signerAddress) external initializer {
+    function initialize(address initialOwner) external initializer {
         __Pausable_init();
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
-        __EIP712_init("ETHFAIRDROP", "1");
-
-        signer = signerAddress;
+        totalAmount = 50_000_000 * 1E18;
     }
 
-    function claim(
-        uint256 amount,
-        uint256 expiration,
-        bytes calldata signature
-    ) public whenNotPaused nonReentrant {
-        require(claimed[msg.sender] == 0 , "E: claimed");
-        require(
-            block.timestamp < expiration,
-            "signature expired"
-        );
+    
+    function claim() public whenNotPaused nonReentrant {
+        ClaimInfo memory info = claimInfo[msg.sender];
+        require(info.claimTimes < 12, "E: can not claim again!");
+        require(info.nextClaimTime < block.timestamp, "E: claimed!");
+        require(WhiteListAmounts[msg.sender] != 0 , "E: Not Eligible");
 
-        bytes32 hash = keccak256(
-            abi.encode(ETHF, msg.sender, amount, expiration)
-        );
-        bytes32 messageHash = MessageHashUtils.toEthSignedMessageHash(hash);
-        address recoveryAddress = ECDSA.recover(messageHash, signature);
-        require(recoveryAddress == signer,"invalid signature");
-
+        uint256 amount = eachTimeClaimAmount(msg.sender);
         IERC20(ETHF).transfer(msg.sender, amount);
 
-        claimed[msg.sender] = amount;
-    }
+        claimed[msg.sender] += amount;
 
-    function verifyCheck(
-        address to,
-        uint256 amount,
-        uint256 expiration,
-        bytes calldata signature
-    ) public view returns(address) {
-        bytes32 hash = keccak256(
-            abi.encode(ETHF, to, amount, expiration)
-        );
-        bytes32 messageHash = MessageHashUtils.toEthSignedMessageHash(hash);
-        address recoveryAddress =  ECDSA.recover(messageHash, signature);
-        require(
-            block.timestamp < expiration,
-            "Signature expired"
-        );
-        return recoveryAddress;
-    }
+        claimInfo[msg.sender].claimTimes += 1;
+        claimInfo[msg.sender].nextClaimTime = block.timestamp + 30 days;
 
-    function managerSigner(address newSigner) external onlyOwner {
-        require(signer != address(0), "E: address error");
-        signer = newSigner;
-    }
-
-    function encodeSigData(
-        address to,
-        uint256 amount,
-        uint256 expiration
-    ) external view returns (bytes32) {
-        return keccak256(
-            abi.encode(ETHF, to, amount, expiration)
-        );
+        emit Claimed(msg.sender, amount);
     }
 
     function takeBackToken() external onlyOwner {
@@ -111,36 +70,48 @@ contract ETHFAirdrop is
         IERC20(ETHF).transfer(msg.sender, tokenBalance);
     }
 
-    // Hash the message (EIP-712 compliant)
-    function hashMessage(Message memory message) public view returns (bytes32) {
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        MESSAGE_TYPEHASH,
-                        message.sender,
-                        message.token,
-                        message.amount,
-                        message.expiration
-                    )
-                )
-            );
+    function addWhiteListAmounts(
+        address[] calldata addrs,
+        uint256[] calldata amounts
+    ) external {
+        uint256 length = addrs.length;
+        for (uint256 i = 0; i < length; ) {
+            address addr = addrs[i];
+            uint256 amount = amounts[i];
+            WhiteListAmounts[addr] += amount;
+            totalVestedToken += amount;
+            unchecked {
+                ++i;
+            }
+        }
     }
 
-    // Verify the signature
-    function verifyUser(
-        Message memory message,
-        bytes memory signature
-    ) public view returns (bool) {
-        require(message.expiration < block.timestamp, "E: expiration");
-        // Hash the message
-        bytes32 digest = hashMessage(message);
+    function resetWhiteListAmounts(
+        address[] calldata addrs
+    ) external {
+        uint256 length = addrs.length;
+        for (uint256 i = 0; i < length; ) {
+            address addr = addrs[i];
 
-        // Recover the signer
-        address recoveredSigner = ECDSA.recover(digest,signature);
+            totalVestedToken -= WhiteListAmounts[addr];
+            WhiteListAmounts[addr] = 0;
 
-        // Check if the signer is the `from` address
-        return recoveredSigner == message.sender;
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function manageTotalAmount(uint256 amount) external onlyOwner {
+        totalAmount = amount;
+    }
+
+    function eachTimeClaimAmount(address account) public view returns (uint256) {
+        return availableToClaim(account) / 12;
+    }
+
+    function availableToClaim(address account) public view returns (uint256) {
+        return (WhiteListAmounts[account] * totalAmount) / totalVestedToken;
     }
 
     function pause() external onlyOwner {
