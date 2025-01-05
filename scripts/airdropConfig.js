@@ -26,16 +26,22 @@ async function main() {
     airdrop_address = process.env.SEPOLIA_AIRDROP;
   } else if (network == 8453) {
     ethf_token = process.env.BASE_ETHF;
-    airdrop_address = process.env.BASE_AIRDROP;
+    airdrop_address = process.env.BASE_AIRDROP_MAIN;
   } else {
     console.error("network error");
   }
 
-  const airdrop = await ethers.getContractAt('ETHFAirdrop', airdrop_address, deployer);
 
-  // let whAmount = ethers.utils.parseEther("1");
+  console.log("airdrop address :", airdrop_address);
+  const airdrop = await ethers.getContractAt('ETHFAirdrop', airdrop_address, deployer);
+  return;
+
+  // let resetWhiteListAmountsTx = await airdrop.resetWhiteListAmounts(["0xAF702571cb3F0b9091C6E6c8B9731705E2ee0804"]);
+  // await resetWhiteListAmountsTx.wait();
+
+  // let whAmount = 1;
   // let setTx = await airdrop.addWhiteListAmounts(
-  //   [deployer.address], 
+  //   ["0xAF702571cb3F0b9091C6E6c8B9731705E2ee0804"], 
   //   [ whAmount ]
   // );
   // await setTx.wait();
@@ -55,7 +61,6 @@ async function main() {
     let accounts = new Array();
     let amounts = new Array();
     for(let j = 0; j < chunkLen; j ++) {
-      // console.log(chunk[j]);
       amounts[j] = chunk[j][0];
 
       totalAmount += chunk[j][0];
@@ -69,9 +74,9 @@ async function main() {
     }
     console.log(accounts);
     console.log(amounts);
-    // let tx = await airdrop.addWhiteListAmounts(accounts, amounts);
-    // await tx.wait();
-    // console.log(tx.hash);
+    let tx = await airdrop.addWhiteListAmounts(accounts, amounts);
+    await tx.wait();
+    console.log(tx.hash);
     console.log("i :", i);
     console.log("account :", account);
   }

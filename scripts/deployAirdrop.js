@@ -25,7 +25,7 @@ async function main() {
   if(network == 11155111) {
     ethf_token = process.env.SEPOLIA_ETHF
   } else if (network == 8453) {
-    ethf_token = process.env.BASE_ETHF
+    ethf_token = process.env.BASE_ETHF_MAIN
   } else {
     console.error("network error");
   }

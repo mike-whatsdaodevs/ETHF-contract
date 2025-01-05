@@ -28,18 +28,21 @@ async function main() {
     airdrop_address = process.env.SEPOLIA_AIRDROP;
   } else if (network == 8453) {
     ethf_token = process.env.BASE_ETHF;
-    airdrop_address = process.env.BASE_AIRDROP;
+    airdrop_address = process.env.BASE_AIRDROP_MAIN;
   } else {
     console.error("network error");
   }
 
   const airdrop = await ethers.getContractAt('ETHFAirdrop', airdrop_address, deployer);
 
-  let claimTx = await airdrop.claim();
-  await claimTx.wait();
-  console.log(claimTx.hash);
+  console.log("airdrop.address: ", airdrop.address);
 
+  // let claimTx = await airdrop.pause();
+  // await claimTx.wait();
+  // console.log(claimTx.hash);
+  
   console.log("eligile is: ", await airdrop.WhiteListAmounts(my_address));
+
   console.log("total Vested Token is: ", await airdrop.totalVestedToken());
 
   let info = await airdrop.claimInfo(my_address);
