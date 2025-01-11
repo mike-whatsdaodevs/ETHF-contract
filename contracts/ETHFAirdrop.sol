@@ -16,6 +16,7 @@ contract ETHFAirdrop is
     UUPSUpgradeable,
     ReentrancyGuardUpgradeable
 {   
+    uint256 public constant totalClaimTimes = 24;
     uint256 public totalAmount;
     uint256 public totalVestedToken;
     mapping(address => uint256) public claimed;
@@ -44,13 +45,16 @@ contract ETHFAirdrop is
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
-        totalAmount = 50_000_000 * 1E18;
+        totalAmount = 20_000_000 * 1E18;
     }
 
+//// (voted token / total voted token) * 20 M tokens  = available amount
+
+//// monthly amount = available amount / totalClaimTimes;
     
     function claim() public whenNotPaused nonReentrant {
         ClaimInfo memory info = claimInfo[msg.sender];
-        require(info.claimTimes < 12, "E: can not claim again!");
+        require(info.claimTimes < totalClaimTimes, "E: can not claim again!");
         require(info.nextClaimTime < block.timestamp, "E: claimed!");
         require(WhiteListAmounts[msg.sender] != 0 , "E: Not Eligible");
 
@@ -107,7 +111,7 @@ contract ETHFAirdrop is
     }
 
     function eachTimeClaimAmount(address account) public view returns (uint256) {
-        return availableToClaim(account) / 12;
+        return availableToClaim(account) / totalClaimTimes;
     }
 
     function availableToClaim(address account) public view returns (uint256) {
