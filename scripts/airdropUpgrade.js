@@ -28,8 +28,8 @@ async function main() {
     ethf_token = process.env.SEPOLIA_ETHF;
     airdrop_address = process.env.SEPOLIA_AIRDROP;
   } else if (network == 8453) {
-    ethf_token = process.env.BASE_ETHF;
-    airdrop_address = process.env.BASE_AIRDROP;
+    ethf_token = process.env.BASE_ETHF_MAIN;
+    airdrop_address = process.env.BASE_AIRDROP_MAIN;
   } else {
     console.error("network error");
   }
