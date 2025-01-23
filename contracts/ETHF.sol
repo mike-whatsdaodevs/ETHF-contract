@@ -16,10 +16,14 @@ contract ETHF is ERC20, Ownable, UUPSUpgradeable, PausableUpgradeable  {
         __Pausable_init();
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
-        __ERC20_init("ETHF", "ETHF");
+        __ERC20_init("ETHFINA", "ETHF");
 
        _mint(msg.sender, 1_000_000_000E18);
 
+    }
+
+    function name() public view override returns (string memory) {
+        return "ETHFINA";
     }
 
      /// uups interface
