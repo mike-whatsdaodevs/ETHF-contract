@@ -31,6 +31,9 @@ contract ETHFAirdrop is
 
     address public immutable ETHF;
 
+    mapping(address => uint256) public WhiteList1Amounts;
+    uint256 public totalVestedToken1;
+
 
     event Claimed(address send, uint256 amount);
 
@@ -56,7 +59,7 @@ contract ETHFAirdrop is
         ClaimInfo memory info = claimInfo[msg.sender];
         require(info.claimTimes < totalClaimTimes, "E: can not claim again!");
         require(info.nextClaimTime < block.timestamp, "E: claimed!");
-        require(WhiteListAmounts[msg.sender] != 0 , "E: Not Eligible");
+        require(WhiteList1Amounts[msg.sender] != 0 , "E: Not Eligible");
 
         uint256 amount = eachTimeClaimAmount(msg.sender);
         IERC20(ETHF).transfer(msg.sender, amount);
@@ -77,13 +80,13 @@ contract ETHFAirdrop is
     function addWhiteListAmounts(
         address[] calldata addrs,
         uint256[] calldata amounts
-    ) external {
+    ) external onlyOwner {
         uint256 length = addrs.length;
         for (uint256 i = 0; i < length; ) {
             address addr = addrs[i];
             uint256 amount = amounts[i];
-            WhiteListAmounts[addr] += amount;
-            totalVestedToken += amount;
+            WhiteList1Amounts[addr] += amount;
+            totalVestedToken1 += amount;
             unchecked {
                 ++i;
             }
@@ -92,13 +95,13 @@ contract ETHFAirdrop is
 
     function resetWhiteListAmounts(
         address[] calldata addrs
-    ) external {
+    ) external onlyOwner {
         uint256 length = addrs.length;
         for (uint256 i = 0; i < length; ) {
             address addr = addrs[i];
 
-            totalVestedToken -= WhiteListAmounts[addr];
-            WhiteListAmounts[addr] = 0;
+            totalVestedToken1 -= WhiteList1Amounts[addr];
+            WhiteList1Amounts[addr] = 0;
 
             unchecked {
                 ++i;
@@ -115,7 +118,7 @@ contract ETHFAirdrop is
     }
 
     function availableToClaim(address account) public view returns (uint256) {
-        return (WhiteListAmounts[account] * totalAmount) / totalVestedToken;
+        return (WhiteList1Amounts[account] * totalAmount) / totalVestedToken1;
     }
 
     function pause() external onlyOwner {

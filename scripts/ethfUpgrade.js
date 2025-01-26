@@ -21,30 +21,25 @@ async function main() {
   const network = (await ethers.provider.getNetwork()).chainId;
   console.log(network);
 
-  let ethf_token; 
-  let airdrop_address;
+  let ethf_token_addess; 
 
   if(network == 11155111) {
-    ethf_token = process.env.SEPOLIA_ETHF;
-    airdrop_address = process.env.SEPOLIA_AIRDROP;
+    ethf_token_addess = process.env.SEPOLIA_ETHF;
   } else if (network == 8453) {
-    ethf_token = process.env.BASE_ETHF_MAIN;
-    airdrop_address = process.env.BASE_AIRDROP_MAIN;
+    ethf_token_addess = process.env.BASE_ETHF_MAIN;
   } else {
     console.error("network error");
   }
 
-  console.log(airdrop_address);
+  const ETHF = await hre.ethers.getContractFactory('ETHF')
+  const ethf = await ETHF.deploy()
+  await ethf.deployed();
+  console.log('ethf deployed to:', ethf.address);
+  let implement_address = ethf.address;
 
-  const ETHFAirdrop = await hre.ethers.getContractFactory('ETHFAirdrop')
-  const ethfAirdrop = await ETHFAirdrop.deploy(ethf_token)
-  await ethfAirdrop.deployed();
-  console.log('ethfAirdrop deployed to:', ethfAirdrop.address);
+  const proxy = await ethers.getContractAt('ETHF', ethf_token_addess, deployer);
 
-
-  const proxy = await ethers.getContractAt('ETHFAirdrop', airdrop_address, deployer);
-
-  let upgradeToTx = await proxy.upgradeToAndCall(ethfAirdrop.address, "0x");
+  let upgradeToTx = await proxy.upgradeToAndCall(implement_address, "0x");
   await upgradeToTx.wait();
   console.log(upgradeToTx.hash);
   

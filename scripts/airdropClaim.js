@@ -37,10 +37,27 @@ async function main() {
 
   console.log("airdrop.address: ", airdrop.address);
 
+
+  let takeBackTokenTx = await airdrop.takeBackToken();
+  await takeBackTokenTx.wait();
+
+  console.log(takeBackTokenTx.hash);
+  return;
+  // let amount = ethers.utils.parseUnits("20 000 000", 18);
+
+  // let manageTotalAmountTx = await airdrop.manageTotalAmount(amount);
+  // await manageTotalAmountTx.wait();
+
+  // console.log(ethers.utils.formatEther(await airdrop.totalAmount()));
+  // return;
+  
+
   // let claimTx = await airdrop.pause();
   // await claimTx.wait();
   // console.log(claimTx.hash);
-  
+
+  // my_address = "0x90ca8ab9481B0F021f949ceE6Da96b2d5a57c1a2";
+
   console.log("eligile is: ", await airdrop.WhiteListAmounts(my_address));
 
   console.log("total Vested Token is: ", await airdrop.totalVestedToken());
@@ -50,7 +67,7 @@ async function main() {
   console.log("availableToClaim Token is: ", ethers.utils.formatEther(await airdrop.availableToClaim(my_address)));
   console.log("eachTimeClaimAmount Token is: ", ethers.utils.formatEther(await airdrop.eachTimeClaimAmount(my_address)));
 
-
+ 
   // let claimTx = await airdrop.claim();
   // await claimTx.wait();
   // console.log(claimTx.hash);

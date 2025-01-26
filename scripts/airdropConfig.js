@@ -34,8 +34,14 @@ async function main() {
 
   console.log("airdrop address :", airdrop_address);
   const airdrop = await ethers.getContractAt('ETHFAirdrop', airdrop_address, deployer);
-  return;
 
+  let a = await airdrop.eachTimeClaimAmount(deployer.address);
+  console.log(await ethers.utils.formatEther(a.toString()));
+  return;
+  // let unpauseTx = await airdrop.unpause();
+  // await unpauseTx.wait();
+  // console.log(await airdrop.paused());
+  // return;
   // let resetWhiteListAmountsTx = await airdrop.resetWhiteListAmounts(["0xAF702571cb3F0b9091C6E6c8B9731705E2ee0804"]);
   // await resetWhiteListAmountsTx.wait();
 
@@ -61,12 +67,15 @@ async function main() {
     let accounts = new Array();
     let amounts = new Array();
     for(let j = 0; j < chunkLen; j ++) {
-      amounts[j] = chunk[j][0];
 
-      totalAmount += chunk[j][0];
-      totalCount += 1;
       accounts[j] = chunk[j][1];
       account = chunk[j][1];
+
+      totalAmount += chunk[j][0];
+      amounts[j] = chunk[j][0];
+
+      totalCount += 1;
+  
       if (!ethers.utils.isAddress(account)) {
         console.log("i is", i);
         console.log("error address is", account);return;

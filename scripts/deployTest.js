@@ -21,33 +21,12 @@ async function main() {
   const network = (await ethers.provider.getNetwork()).chainId;
   console.log(network);
 
-  let ethf_token; 
-  let airdrop_address;
 
-  if(network == 11155111) {
-    ethf_token = process.env.SEPOLIA_ETHF;
-    airdrop_address = process.env.SEPOLIA_AIRDROP;
-  } else if (network == 8453) {
-    ethf_token = process.env.BASE_ETHF_MAIN;
-    airdrop_address = process.env.BASE_AIRDROP_MAIN;
-  } else {
-    console.error("network error");
-  }
+  const TEST = await hre.ethers.getContractFactory('TEST')
+  const test = await TEST.deploy()
+  await test.deployed()
+  console.log('test deployed to:', test.address);
 
-  console.log(airdrop_address);
-
-  const ETHFAirdrop = await hre.ethers.getContractFactory('ETHFAirdrop')
-  const ethfAirdrop = await ETHFAirdrop.deploy(ethf_token)
-  await ethfAirdrop.deployed();
-  console.log('ethfAirdrop deployed to:', ethfAirdrop.address);
-
-
-  const proxy = await ethers.getContractAt('ETHFAirdrop', airdrop_address, deployer);
-
-  let upgradeToTx = await proxy.upgradeToAndCall(ethfAirdrop.address, "0x");
-  await upgradeToTx.wait();
-  console.log(upgradeToTx.hash);
-  
 }
 
 // We recommend this pattern to be able to use async/await everywhere
@@ -55,6 +34,4 @@ async function main() {
 main().catch((error) => {
   console.error(error)
   process.exitCode = 1
-});
-
-// Ethfina@2023
+})

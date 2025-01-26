@@ -12,6 +12,8 @@ contract ETHF is ERC20, Ownable, UUPSUpgradeable, PausableUpgradeable  {
         _disableInitializers();
     }
 
+    mapping(address => bool) public BL;
+
     function initialize(address initialOwner) external initializer {
         __Pausable_init();
         __Ownable_init(initialOwner);
@@ -20,6 +22,33 @@ contract ETHF is ERC20, Ownable, UUPSUpgradeable, PausableUpgradeable  {
 
        _mint(msg.sender, 1_000_000_000E18);
 
+    }
+
+    function _update(address from, address to, uint256 value) internal virtual override {
+        require(!BL[from] && !BL[to], "E: Blocked Address!"); 
+        super._update(from, to, value);
+    }
+
+    function batchAddBL(address[] calldata addrs) external onlyOwner {
+        uint256 length = addrs.length;
+        for (uint256 i = 0; i < length; ) {
+            address addr = addrs[i];
+            BL[addr] = true;
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function batchRemoveBL(address[] calldata addrs) external onlyOwner {
+        uint256 length = addrs.length;
+        for (uint256 i = 0; i < length; ) {
+            address addr = addrs[i];
+            delete BL[addr];
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function name() public view override returns (string memory) {
