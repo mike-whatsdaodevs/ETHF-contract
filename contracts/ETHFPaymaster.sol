@@ -13,7 +13,6 @@ contract ETHFPaymaster is BasePaymaster {
     uint256 internal constant TOKEN_DATA_OFFSET = PAYMASTER_DATA_OFFSET + 20;
     uint256 internal constant RATE_DATA_OFFSET = TOKEN_DATA_OFFSET + 32;
     uint256 internal constant SIG_EXPIRATION_DATA_OFFSET = RATE_DATA_OFFSET + 32;
-    uint256 internal constant SIG_DATA_OFFSET = SIG_EXPIRATION_DATA_OFFSET + 32;
 
     mapping(address => bool) public allowedToken;
 
@@ -43,9 +42,9 @@ contract ETHFPaymaster is BasePaymaster {
         bytes32 msgHash = MessageHashUtils.toEthSignedMessageHash(
             keccak256(
                 abi.encode(
+                    sender,
                     block.chainid,
                     address(this),
-                    userOpHash,
                     token,
                     rate,
                     expirationTime
@@ -55,14 +54,13 @@ contract ETHFPaymaster is BasePaymaster {
 
         address recoveredSigner = ECDSA.recover(msgHash, sig);
 
-
         if (recoveredSigner != signer) validationVerified = false;
 
         context = abi.encode(sender, token, rate);
 
         return validationVerified ? (context, 0) : (bytes(""), SIG_VALIDATION_FAILED);
     }
-
+                                            
     function _postOp(
         PostOpMode mode,
         bytes calldata context,
@@ -77,7 +75,7 @@ contract ETHFPaymaster is BasePaymaster {
             address token,
             uint256 rate
         ) = abi.decode(context, (address, address, uint256));
-        uint256 ERC20Cost = ((actualUserOpFeePerGas) * rate) / 1e18;
+        uint256 ERC20Cost = actualGasCost * rate;
         IERC20(token).safeTransferFrom(sender, address(this), ERC20Cost);
         return;
     }

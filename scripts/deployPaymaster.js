@@ -23,7 +23,7 @@ async function main() {
 
 
   const ETHFPaymaster = await hre.ethers.getContractFactory('ETHFPaymaster')
-  const paymaster = await ETHFPaymaster.deploy(process.env.ENTERYPOINT)
+  const paymaster = await ETHFPaymaster.deploy(process.env.ENTERYPOINT, process.env.PAYMASTER_SIGNER)
   await paymaster.deployed();
   console.log('paymaster deployed to:', paymaster.address);
 }
