@@ -57,6 +57,9 @@ contract ETHFStakeStaticPool is
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
         minAmount = 1E17;
+        rewardRate = 4;
+        minAmount = 1E15;
+        locktime = 356 days;
     }
 
     modifier updateReward(address _account) {
@@ -76,11 +79,12 @@ contract ETHFStakeStaticPool is
 
     /// each token earned
     function rewardPerToken(address _account) public view returns (uint256) {
-        return rewardRate * (block.timestamp - lastTimeRewardApplicable(_account)) * 1E18;
+        return rewardRate * (block.timestamp - lastTimeRewardApplicable(_account));
     }
 
     function stake() external payable updateReward(msg.sender) {
         if(msg.value < minAmount) revert InvalidAmount(msg.value);
+        startTime[msg.sender] = block.timestamp;
         vault.sendValue(msg.value);
         balanceOf[msg.sender] += msg.value;
         totalStaked += msg.value;
@@ -94,7 +98,7 @@ contract ETHFStakeStaticPool is
     }
 
     function earned(address _account) public view returns (uint256) {
-        return balanceOf[_account] * rewardPerToken(_account);
+        return balanceOf[_account] * rewardPerToken(_account) / 1 days;
     }
 
     function getReward() external updateReward(msg.sender) {
@@ -104,6 +108,10 @@ contract ETHFStakeStaticPool is
             claimed[msg.sender] += reward;
             ETHF.safeTransfer(msg.sender, reward);
         }
+    }
+
+    function setRewardRate(uint256 rate) external onlyOwner {
+        rewardRate = rate;
     }
 
     function _min(uint256 x, uint256 y) private pure returns (uint256) {

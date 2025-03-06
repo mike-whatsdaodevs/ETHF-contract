@@ -39,6 +39,10 @@ contract ETHFPaymaster is BasePaymaster {
             validationVerified = false;
         }
 
+        if (!allowedToken[token]) {
+            validationVerified = false;
+        }
+
         bytes32 msgHash = MessageHashUtils.toEthSignedMessageHash(
             keccak256(
                 abi.encode(
@@ -60,6 +64,15 @@ contract ETHFPaymaster is BasePaymaster {
 
         return validationVerified ? (context, 0) : (bytes(""), SIG_VALIDATION_FAILED);
     }
+
+    function setPaymasterSigner(address newSigner) external onlyOwner {
+        signer = newSigner;
+    }
+
+    function setAllowedToken(address token, bool status) external onlyOwner {
+        allowedToken[token] = status;
+    }
+    
                                             
     function _postOp(
         PostOpMode mode,
