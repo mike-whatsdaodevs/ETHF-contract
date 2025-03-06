@@ -91,7 +91,8 @@ contract ETHFStakeStaticPool is
     }
 
     function withdraw(uint256 _amount) external updateReward(msg.sender) {
-        if(_amount == 0) revert InvalidAmount(0);
+        if(_amount == 0 || balanceOf[msg.sender] < _amount) revert InvalidAmount(_amount);
+        if(startTime[msg.sender] + locktime > block.timestamp) revert InvalidTimestamp();
         balanceOf[msg.sender] -= _amount;
         totalStaked -= _amount;
         payable(msg.sender).sendValue(_amount);
